@@ -1,5 +1,5 @@
-from sqlalchemy import String, Text, TIMESTAMP
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Text, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 from app.database import Base
@@ -11,9 +11,13 @@ class Booking(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
-        server_default=func.now(),  # <-- БД сама проставит значение
+        server_default=func.now(),
         nullable=False,
     )
+
+    # связь с номером
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), nullable=False)
+    room = relationship("Room", back_populates="bookings")
 
     # обязательные поля
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)

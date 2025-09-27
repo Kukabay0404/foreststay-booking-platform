@@ -27,11 +27,3 @@ class User(Base):
         server_default=func.now(),  # <-- БД сама проставит значение
         nullable=False,
     )
-
-# {
-#   "email": "kuanysh@example.com",
-#   "first_name": "Kuanysh",
-#   "last_name": "Perdebekov",
-#   "role": "client",
-#   "password": "133112"
-# }

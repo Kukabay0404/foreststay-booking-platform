@@ -1,8 +1,9 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime
 
 
 class BookingBase(BaseModel):
+    room_id: int
     last_name: str
     first_name: str
     phone: str

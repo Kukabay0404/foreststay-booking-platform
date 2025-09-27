@@ -1,62 +1,19 @@
-from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from sqlalchemy import select
 from app.database import get_db
 from app.schemas import user
 from app import models, schemas
+from app.auth.hash import hash_password
+from app.auth.deps import get_current_user
+from app.auth.jwt_handler import create_access_token
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-SECRET_KEY = "supersecretkey"  # лучше вынести в .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
-
-def hash_password(password : str):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def verify_access_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Не удалось проверить токен",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return email
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный токен",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db),
-):
-    email = verify_access_token(token)
-    result = await db.execute(select(models.User).where(models.User.email == email))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    return user
-
 
 @router.post('/register', response_model=user.UserOut)
 async def create_user(user : schemas.user.UserCreate, db : AsyncSession = Depends(get_db)):
@@ -134,3 +91,25 @@ async def delete_user(
     await db.delete(user_to_delete)
     await db.commit()
     return {"detail": f"Пользователь {user_id} успешно удалён"}
+
+
+@router.put("/{user_id}", response_model=schemas.UserOut)
+async def update_user(
+    user_id: int,
+    user_update: schemas.UserUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
+    db_user = result.scalars().first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    # обновляем только переданные поля
+    for key, value in user_update.dict(exclude_unset=True).items():
+        setattr(db_user, key, value)
+
+    await db.commit()
+    await db.refresh(db_user)
+
+    return db_user
