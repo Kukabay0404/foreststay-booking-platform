@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   // список страниц, где НЕ нужно показывать Hero / Header / Footer
   const hidHeader = ["/", "/auth/login", "/auth/register", "/admin"];
-  const hideHero = ["/auth/login", "/auth/register", "/", "/summer/football", "/summer/paintball", "/admin"];
+  const hideHero = ["/auth/login", "/auth/register", "/", "/summer/football", "/summer/paintball", "/admin", "/booking"];
   const hidFooter = ["/", "/auth/login", "/auth/register", "/admin"];
 
   return (
