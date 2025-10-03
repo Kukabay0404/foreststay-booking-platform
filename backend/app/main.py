@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.database import engine, Base
-from app.routers import checkout, user, room_admin, user_admin
+from app.routers import checkout, user, room_admin, user_admin, cabin_admin
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -32,3 +32,4 @@ app.include_router(checkout.router)
 app.include_router(user.router)
 app.include_router(user_admin.router)
 app.include_router(room_admin.router)
+app.include_router(cabin_admin.router)

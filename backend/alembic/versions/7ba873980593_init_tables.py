@@ -20,7 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade():
     # 1. Добавляем колонку, но пока nullable
-    op.add_column("bookings", sa.Column("room_id", sa.Integer(), nullable=True))
     op.create_foreign_key("fk_bookings_room", "bookings", "rooms", ["room_id"], ["id"])
 
     # 2. Заполняем колонку для старых записей (например, дефолтный номер = 1)

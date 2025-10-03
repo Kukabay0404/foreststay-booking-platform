@@ -18,7 +18,7 @@ class Room(Base):
     area: Mapped[str] = mapped_column(String(50), nullable=False)
     beds: Mapped[int] = mapped_column(Integer, nullable=False)
     tv: Mapped[bool] = mapped_column(Boolean, default=False)
-    capacity: Mapped[int] = mapped_column(Integer, nullable=False)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default="1")
 
     price_weekdays: Mapped[str] = mapped_column(String(50), nullable=False)
     price_weekend: Mapped[str] = mapped_column(String(50), nullable=False)

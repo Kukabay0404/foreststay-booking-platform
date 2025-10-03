@@ -30,6 +30,10 @@ class RoomOut(RoomBase):
     id: int
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,  # 👈 важно, чтобы FastAPI мапил ORM в схему
+        alias_generator=to_camel,
+        populate_by_name=True
+    )
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from alembic import context
 
 from app.database import Base  # твой Base
-from app.models import checkout  # импортируй модели, чтобы Alembic их видел
+from app.models import checkout, cabin # импортируй модели, чтобы Alembic их видел
 
 # Alembic Config
 config = context.config

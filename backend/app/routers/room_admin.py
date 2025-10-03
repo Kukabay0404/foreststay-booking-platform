@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
+from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
+from app.models import Room
+from app.schemas.room_request import SearchRequest, RoomOut
+
 
 router = APIRouter(prefix="/room_admin", tags=["Admin"])
 
@@ -38,3 +42,17 @@ async def delete_room(room_id: int, db: AsyncSession = Depends(get_db)):
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Room not found")
     return {"message": "Room deleted"}
+
+@router.post("/", response_model=list[RoomOut])
+def search_rooms(req: SearchRequest, db: Session = Depends(get_db)):
+    # Считаем общее количество гостей
+    total_guests = sum(r["adults"] + r["children"] for r in req.guests)
+
+    # Базовый фильтр по вместимости
+    query = db.query(Room).filter(Room.capacity >= total_guests)
+
+    # TODO: проверить занятость через таблицу Booking
+    # Если не будешь делать бронь сразу — можно пропустить
+
+    rooms = query.all()
+    return rooms

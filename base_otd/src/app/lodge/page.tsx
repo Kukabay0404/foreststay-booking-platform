@@ -8,61 +8,13 @@ import type { Range, RangeKeyDict } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Plus, Minus } from "lucide-react";
-import RoomCard, { Room } from "@/components/RoomCard";
-
-const cabins: Room[] = [
-  {
-    id: 1,
-    title: "Сруб Малый",
-    category: "Сруб",
-    rooms: 2,
-    area: "35 м²",
-    beds: 4,
-    tv: true,
-    priceWeekdays: "25 000 тг",
-    priceWeekend: "30 000 тг",
-    images: [
-      "https://mir-s3-cdn-cf.behance.net/project_modules/source/6c04da47674803.5881365ba572c.jpg",
-      "https://static.tildacdn.com/tild6464-6132-4737-b263-376434653964/view_CShading_Beauty.jpg",
-      "https://i.pinimg.com/originals/aa/94/91/aa9491473e395dca170826e7b2391ac0.jpg",
-    ],
-  },
-  {
-    id: 2,
-    title: "Сруб Средний",
-    category: "Сруб",
-    rooms: 3,
-    area: "50 м²",
-    beds: 6,
-    tv: true,
-    priceWeekdays: "40 000 тг",
-    priceWeekend: "45 000 тг",
-    images: [
-      "/rooms/203/standart.jpg",
-      "/rooms/203/standart2.jpeg",
-      "/rooms/203/standart3.jpg",
-    ],
-  },
-  {
-    id: 3,
-    title: "Сруб Большой",
-    category: "Сруб",
-    rooms: 4,
-    area: "70 м²",
-    beds: 10,
-    tv: true,
-    priceWeekdays: "60 000 тг",
-    priceWeekend: "70 000 тг",
-    images: [
-      "https://i.pinimg.com/originals/f5/6b/95/f56b95f7db83bd6ff189d43aec18b1f1.jpg",
-      "https://i.pinimg.com/originals/f6/b4/90/f6b49089d0e1c61a786c75469229d80e.jpg",
-      "https://st.hzcdn.com/simgs/pictures/living-rooms/modern-rustic-great-room-studiotrimble-img~11d174c00fdfb185_9-1479-1-40d8070.jpg",
-      "https://elles.top/uploads/posts/2023-04/1680750330_elles-top-p-natyazhnoi-potolok-v-dome-iz-brevna-krasiv-35.jpg",
-    ],
-  },
-];
+import CabinCard, { Cabin } from "@/components/CabinCard";
 
 export default function CabinsPage() {
+  // список срубов
+  const [cabins, setCabins] = useState<Cabin[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // гости
   const [roomsGuests, setRoomsGuests] = useState([{ adults: 2, children: 0 }]);
   const [showGuests, setShowGuests] = useState(false);
@@ -74,6 +26,8 @@ export default function CabinsPage() {
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
+
+  // загрузка начальных дат
   useEffect(() => {
     setDateRange([
       {
@@ -83,6 +37,37 @@ export default function CabinsPage() {
       },
     ]);
     setMounted(true);
+  }, []);
+
+  // подгружаем список срубов с API
+  useEffect(() => {
+    async function fetchCabins() {
+      try {
+        const res = await fetch("http://localhost:8000/cabin_admin"); // ⚠️ настрой proxy для Next.js
+        const data = await res.json();
+
+        const normalized = data.map((cabin: any) => ({
+          id: cabin.id,
+          title: cabin.title,
+          category: cabin.category,
+          rooms: cabin.rooms,
+          beds: cabin.beds,
+          area: `${cabin.floors} этаж(а), ${cabin.rooms} комнаты`,
+          priceWeekdays: `${cabin.priceWeekdays.toLocaleString()}`,
+          priceWeekend: `${cabin.priceWeekend.toLocaleString()}`,
+          pool: cabin.pool,
+          images: cabin.images ?? [],
+        }));
+
+        setCabins(normalized);
+      } catch (err) {
+        console.error("Ошибка загрузки срубов:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCabins();
   }, []);
 
   // закрытие попапов
@@ -112,6 +97,44 @@ export default function CabinsPage() {
 
   const totalAdults = roomsGuests.reduce((sum, r) => sum + r.adults, 0);
   const totalChildren = roomsGuests.reduce((sum, r) => sum + r.children, 0);
+
+  // обработчик поиска
+  const handleSearch = async () => {
+    const payload = {
+      startDate: dateRange[0]?.startDate?.toISOString(),
+      endDate: dateRange[0]?.endDate?.toISOString(),
+      guests: roomsGuests,
+    };
+
+    try {
+      const res = await fetch("http://localhost:8000/cabin_admin/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Ошибка поиска");
+
+      const data = await res.json();
+
+      const normalized = data.map((cabin: any) => ({
+        id: cabin.id,
+        title: cabin.title,
+        category: cabin.category,
+        rooms: cabin.rooms,
+        beds: cabin.beds,
+        area: `${cabin.floors} этаж(а), ${cabin.rooms} комнаты`,
+        priceWeekdays: `${cabin.priceWeekdays.toLocaleString()} тг`,
+        priceWeekend: `${cabin.priceWeekend.toLocaleString()} тг`,
+        pool: cabin.pool,
+        images: cabin.images ?? [],
+      }));
+
+      setCabins(normalized);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen pt-24 pb-12">
@@ -217,14 +240,17 @@ export default function CabinsPage() {
             )}
           </div>
 
-          <button className="px-6 py-2 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 shadow">
+          <button
+            onClick={handleSearch}
+            className="px-6 py-2 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 shadow"
+          >
             Найти
           </button>
         </div>
 
         {/* кнопки переключения */}
         <div className="flex justify-center gap-6 mb-8">
-          <Link href="/rooms">
+          <Link href="/booking">
             <button className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 shadow">
               Номера
             </button>
@@ -238,9 +264,13 @@ export default function CabinsPage() {
 
         {/* карточки срубов */}
         <div className="space-y-12">
-          {cabins.map((cabin) => (
-            <RoomCard key={cabin.id} room={cabin} />
-          ))}
+          {loading ? (
+            <p className="text-gray-500">Загрузка...</p>
+          ) : cabins.length === 0 ? (
+            <p className="text-gray-500">Нет доступных срубов</p>
+          ) : (
+            cabins.map((cabin) => <CabinCard key={cabin.id} cabin={cabin} />)
+          )}
         </div>
       </div>
     </div>

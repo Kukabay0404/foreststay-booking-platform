@@ -19,6 +19,10 @@ class Booking(Base):
     room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), nullable=False)
     room = relationship("Room", back_populates="bookings")
 
+    # бронирование сруба
+    cabin_id: Mapped[int | None] = mapped_column(ForeignKey("cabins.id"), nullable=True)
+    cabin = relationship("Cabin", back_populates="bookings")
+
     # обязательные поля
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
