@@ -6,12 +6,24 @@ import { useState } from "react";
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
 
-  const roomId = searchParams.get("roomId"); // ID комнаты для backend
-  const roomTitle = searchParams.get("roomTitle"); // название для отображения
+  const roomId = searchParams.get("roomId");
+  const roomTitle = searchParams.get("roomTitle") || searchParams.get("cabinTitle");
   const checkIn = searchParams.get("checkIn");
   const checkOut = searchParams.get("checkOut");
   const guests = searchParams.get("guests");
   const price = searchParams.get("price");
+
+  // Парсим гостей
+  const parsedGuests = guests ? JSON.parse(guests) : [];
+  const totalAdults = parsedGuests.reduce(
+    (sum: number, r: any) => sum + (r.adults || 0),
+    0
+  );
+  const totalChildren = parsedGuests.reduce(
+    (sum: number, r: any) => sum + (r.children || 0),
+    0
+  );
+  const totalRooms = parsedGuests.length;
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -49,7 +61,7 @@ export default function CheckoutPage() {
     e.preventDefault();
 
     const bookingData = {
-      room_id: roomId ? Number(roomId) : null, // ✅ теперь уходит в backend
+      room_id: roomId ? Number(roomId) : null,
       last_name: formData.lastName,
       first_name: formData.firstName,
       middle_name: formData.middleName || null,
@@ -90,12 +102,13 @@ export default function CheckoutPage() {
       <h1 className="text-3xl font-bold mb-6">Бронирование</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl">
-        {/* Левая часть - форма */}
+        {/* Левая часть — форма */}
         <form
           onSubmit={handleSubmit}
           className="lg:col-span-2 bg-white shadow-lg rounded-2xl p-6 space-y-6"
         >
           <h2 className="text-xl font-semibold">Введите свои данные</h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               type="text"
@@ -162,7 +175,6 @@ export default function CheckoutPage() {
             </select>
           </div>
 
-          {/* Дополнительно */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Дополнительно</h2>
             <textarea
@@ -175,7 +187,6 @@ export default function CheckoutPage() {
             />
           </div>
 
-          {/* Способ оплаты */}
           <div>
             <h2 className="text-xl font-semibold mb-2">Выберите способ оплаты</h2>
             <label className="flex items-center border p-4 rounded-lg mb-2 cursor-pointer">
@@ -196,7 +207,6 @@ export default function CheckoutPage() {
             </label>
           </div>
 
-          {/* Согласие */}
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -218,22 +228,37 @@ export default function CheckoutPage() {
           </button>
         </form>
 
-        {/* Правая часть - детали брони */}
+        {/* Правая часть — детали брони */}
         <div className="bg-gray-50 border rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4">Ваше бронирование</h2>
-          <p className="text-gray-700">
-            <strong>Заезд:</strong> {checkIn || "—"} <br />
-            <strong>Выезд:</strong> {checkOut || "—"} <br />
-            <strong>Гости:</strong> {guests || "—"}
+
+          <p className="text-gray-700 mb-2">
+            <strong>Заезд:</strong>{" "}
+            {checkIn ? new Date(checkIn).toLocaleDateString("ru-RU") : "—"}
           </p>
+          <p className="text-gray-700 mb-2">
+            <strong>Выезд:</strong>{" "}
+            {checkOut ? new Date(checkOut).toLocaleDateString("ru-RU") : "—"}
+          </p>
+
+          <p className="text-gray-700 mb-2">
+            <strong>Гости:</strong>{" "}
+            {totalAdults} взрослых
+            {totalChildren > 0 ? `, ${totalChildren} детей` : ""} (
+            {totalRooms} номер{totalRooms > 1 ? "а" : ""})
+          </p>
+
           <hr className="my-4" />
-          <p className="text-gray-700">
-            <strong>Номер:</strong> {roomTitle || "Не выбран"}
+
+          <p className="text-gray-700 mb-2">
+            <strong>Название номера:</strong> {roomTitle || "Не выбран"}
           </p>
-          <p className="text-lg font-bold mt-4">{price || "—"} ₸</p>
+
+          <p className="text-2xl font-bold text-green-700 mt-4">
+            {price ? Number(price).toLocaleString("ru-RU") : "—"} ₸
+          </p>
         </div>
       </div>
     </div>
   );
 }
-

@@ -1,5 +1,5 @@
-// components/CabinCard.tsx
 "use client";
+
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,6 +18,11 @@ export interface Cabin {
   images?: string[];
 }
 
+export interface GuestInfo {
+  adults: number;
+  children: number;
+}
+
 function normalizeImagePath(path: string): string {
   if (!path) return "/placeholder.jpg";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
@@ -29,8 +34,30 @@ function normalizeImagePath(path: string): string {
   return path;
 }
 
-export default function CabinCard({ cabin }: { cabin: Cabin }) {
+export default function CabinCard({
+  cabin,
+  startDate,
+  endDate,
+  guests,
+}: {
+  cabin: Cabin;
+  startDate?: Date;
+  endDate?: Date;
+  guests: GuestInfo[];
+}) {
   const [currentImage, setCurrentImage] = useState(0);
+
+  const startISO = startDate ? startDate.toISOString() : "";
+  const endISO = endDate ? endDate.toISOString() : "";
+
+  const handleBookingLink = () => {
+    const guestsQuery = encodeURIComponent(JSON.stringify(guests));
+    return `/checkout?cabinId=${cabin.id}&cabinTitle=${encodeURIComponent(
+      cabin.title
+    )}&checkIn=${encodeURIComponent(startISO)}&checkOut=${encodeURIComponent(
+      endISO
+    )}&guests=${guestsQuery}&price=${cabin.priceWeekdays}`;
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start bg-white rounded-2xl shadow-md p-6">
@@ -82,7 +109,9 @@ export default function CabinCard({ cabin }: { cabin: Cabin }) {
                 key={index}
                 onClick={() => setCurrentImage(index)}
                 className={`relative w-20 h-16 cursor-pointer rounded overflow-hidden border ${
-                  index === currentImage ? "border-green-600" : "border-transparent"
+                  index === currentImage
+                    ? "border-green-600"
+                    : "border-transparent"
                 }`}
               >
                 <Image
@@ -133,7 +162,8 @@ export default function CabinCard({ cabin }: { cabin: Cabin }) {
             </span>
           </p>
         </div>
-        <Link href={`/checkout?cabinId=${cabin.id}`}>
+
+        <Link href={handleBookingLink()}>
           <button className="mt-4 bg-green-700 hover:bg-green-800 text-white py-3 px-6 rounded-lg font-semibold">
             Забронировать
           </button>

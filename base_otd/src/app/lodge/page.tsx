@@ -52,9 +52,9 @@ export default function CabinsPage() {
           category: cabin.category,
           rooms: cabin.rooms,
           beds: cabin.beds,
-          area: `${cabin.floors} этаж(а), ${cabin.rooms} комнаты`,
-          priceWeekdays: `${cabin.priceWeekdays.toLocaleString()}`,
-          priceWeekend: `${cabin.priceWeekend.toLocaleString()}`,
+          floors: cabin.floors,
+          priceWeekdays: `${cabin.priceWeekdays}`,
+          priceWeekend: `${cabin.priceWeekend}`,
           pool: cabin.pool,
           images: cabin.images ?? [],
         }));
@@ -123,9 +123,9 @@ export default function CabinsPage() {
         category: cabin.category,
         rooms: cabin.rooms,
         beds: cabin.beds,
-        area: `${cabin.floors} этаж(а), ${cabin.rooms} комнаты`,
-        priceWeekdays: `${cabin.priceWeekdays.toLocaleString()} тг`,
-        priceWeekend: `${cabin.priceWeekend.toLocaleString()} тг`,
+        floors: cabin.floors,
+        priceWeekdays: `${cabin.priceWeekdays}`,
+        priceWeekend: `${cabin.priceWeekend}`,
         pool: cabin.pool,
         images: cabin.images ?? [],
       }));
@@ -269,7 +269,15 @@ export default function CabinsPage() {
           ) : cabins.length === 0 ? (
             <p className="text-gray-500">Нет доступных срубов</p>
           ) : (
-            cabins.map((cabin) => <CabinCard key={cabin.id} cabin={cabin} />)
+            cabins.map((cabin) => (
+            <CabinCard
+              key={cabin.id}
+              cabin={cabin}
+              startDate={dateRange[0]?.startDate}
+              endDate={dateRange[0]?.endDate}
+              guests={roomsGuests}
+            />
+          ))
           )}
         </div>
       </div>
