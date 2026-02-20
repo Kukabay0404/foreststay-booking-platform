@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { apiUrl } from "@/lib/api";
 
 interface Room {
   id: number;
@@ -20,7 +21,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/room_admin")
+    fetch(apiUrl("/room_admin/public"))
       .then((res) => res.json())
       .then((data) => setRooms(data));
   }, []);

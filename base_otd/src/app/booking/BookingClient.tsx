@@ -1,20 +1,23 @@
-// app/lodge/page.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DateRange } from "react-date-range";
 import type { Range, RangeKeyDict } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Plus, Minus } from "lucide-react";
-import CabinCard, { Cabin } from "@/components/CabinCard";
+import RoomCard, { Room } from "@/components/RoomCard";
 import { apiUrl } from "@/lib/api";
 
-export default function CabinsPage() {
-  // список срубов
-  const [cabins, setCabins] = useState<Cabin[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function BookingClient({ initialRooms, initialFetchError }: { initialRooms?: Room[]; initialFetchError?: boolean }) {
+  const [roomsData, setRoomsData] = useState<Room[]>(initialRooms ?? []);
+  const searchParams = useSearchParams();
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchPerformed, setSearchPerformed] = useState(false);
 
   // гости
   const [roomsGuests, setRoomsGuests] = useState([{ adults: 2, children: 0 }]);
@@ -27,51 +30,49 @@ export default function CabinsPage() {
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
-
-  // загрузка начальных дат
+  const [prefilledFromQuery, setPrefilledFromQuery] = useState(false);
+  const autoSearchDoneRef = useRef(false);
   useEffect(() => {
+    const checkInParam = searchParams.get("checkIn");
+    const checkOutParam = searchParams.get("checkOut");
+    const guestsParam = searchParams.get("guests");
+
+    const now = new Date();
+    const start = checkInParam ? new Date(checkInParam) : now;
+    const end = checkOutParam ? new Date(checkOutParam) : start;
+
+    const safeStart = Number.isNaN(start.getTime()) ? now : start;
+    const safeEndCandidate = Number.isNaN(end.getTime()) ? safeStart : end;
+    const safeEnd = safeEndCandidate < safeStart ? safeStart : safeEndCandidate;
+
     setDateRange([
       {
-        startDate: new Date(),
-        endDate: new Date(),
+        startDate: safeStart,
+        endDate: safeEnd,
         key: "selection",
       },
     ]);
-    setMounted(true);
-  }, []);
 
-  // подгружаем список срубов с API
-  useEffect(() => {
-    async function fetchCabins() {
+    if (guestsParam) {
       try {
-        const res = await fetch(apiUrl("/cabin_admin/public"));
-        const data = await res.json();
-
-        const normalized = data.map((cabin: any) => ({
-          id: cabin.id,
-          title: cabin.title,
-          category: cabin.category,
-          rooms: cabin.rooms,
-          beds: cabin.beds,
-          floors: cabin.floors,
-          priceWeekdays: `${cabin.priceWeekdays}`,
-          priceWeekend: `${cabin.priceWeekend}`,
-          pool: cabin.pool,
-          images: cabin.images ?? [],
-        }));
-
-        setCabins(normalized);
-      } catch (err) {
-        console.error("Ошибка загрузки срубов:", err);
-      } finally {
-        setLoading(false);
+        const parsed = JSON.parse(guestsParam) as Array<{ adults?: number; children?: number }>;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const normalized = parsed.map((g) => ({
+            adults: Math.max(1, Number(g.adults) || 1),
+            children: Math.max(0, Number(g.children) || 0),
+          }));
+          setRoomsGuests(normalized);
+        }
+      } catch {
+        // ignore malformed guests query
       }
     }
 
-    fetchCabins();
-  }, []);
+    setPrefilledFromQuery(Boolean(checkInParam || checkOutParam || guestsParam));
+    setMounted(true);
+  }, [searchParams]);
 
-  // закрытие попапов
+  // закрытие выпадашек
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
@@ -85,74 +86,111 @@ export default function CabinsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // функции гостей
-  const updateRoomGuests = (index: number, field: "adults" | "children", value: number) => {
+  // функции гостей — мемоизируем обработчики и вычисления, чтобы уменьшить лишние рендеры
+  const updateRoomGuests = useCallback((index: number, field: "adults" | "children", value: number) => {
     setRoomsGuests((prev) =>
       prev.map((r, i) => (i === index ? { ...r, [field]: Math.max(0, value) } : r))
     );
-  };
+  }, []);
 
-  const addRoom = () => {
+  const addRoom = useCallback(() => {
     setRoomsGuests((prev) => [...prev, { adults: 1, children: 0 }]);
-  };
+  }, []);
 
-  const totalAdults = roomsGuests.reduce((sum, r) => sum + r.adults, 0);
-  const totalChildren = roomsGuests.reduce((sum, r) => sum + r.children, 0);
+  const totalAdults = useMemo(() => roomsGuests.reduce((sum, r) => sum + r.adults, 0), [roomsGuests]);
+  const totalChildren = useMemo(() => roomsGuests.reduce((sum, r) => sum + r.children, 0), [roomsGuests]);
 
-  // обработчик поиска
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
+    setSearchPerformed(true);
+    if (!dateRange[0]?.startDate || !dateRange[0]?.endDate) {
+      setError("Пожалуйста, выберите даты");
+      return;
+    }
+
     const payload = {
-      startDate: dateRange[0]?.startDate?.toISOString(),
-      endDate: dateRange[0]?.endDate?.toISOString(),
+      startDate: dateRange[0].startDate.toISOString(),
+      endDate: dateRange[0].endDate.toISOString(),
       guests: roomsGuests,
     };
 
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(apiUrl("/cabin_admin/public/search"), {
+      const res = await fetch(apiUrl("/room_admin/public/search"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Ошибка поиска");
+      if (!res.ok) {
+        setError('Ошибка поиска');
+        return;
+      }
 
       const data = await res.json();
 
-      const normalized = data.map((cabin: any) => ({
-        id: cabin.id,
-        title: cabin.title,
-        category: cabin.category,
-        rooms: cabin.rooms,
-        beds: cabin.beds,
-        floors: cabin.floors,
-        priceWeekdays: `${cabin.priceWeekdays}`,
-        priceWeekend: `${cabin.priceWeekend}`,
-        pool: cabin.pool,
-        images: cabin.images ?? [],
+      // нормализация данных
+      const normalized = data.map((room: any) => ({
+        id: room.id,
+        title: room.title,
+        category: room.category,
+        rooms: room.rooms,
+        area: room.area,
+        beds: room.beds,
+        tv: room.tv,
+        priceWeekdays: Number(room.priceWeekdays) || 0,
+        priceWeekend: Number(room.priceWeekend) || 0,
+        images: room.images ?? [],
       }));
 
-      setCabins(normalized);
+      setRoomsData(normalized);
+
     } catch (err) {
       console.error(err);
+      setError('Не удалось выполнить поиск номеров');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [dateRange, roomsGuests]);
+
+  useEffect(() => {
+    if (!mounted || !prefilledFromQuery || autoSearchDoneRef.current) return;
+
+    const start = dateRange[0]?.startDate;
+    const end = dateRange[0]?.endDate;
+    if (!start || !end || end <= start) return;
+
+    autoSearchDoneRef.current = true;
+    void handleSearch();
+  }, [mounted, prefilledFromQuery, dateRange, handleSearch]);
+
+  const guestsQuery = useMemo(() => roomsGuests.map((r, i) => `room${i + 1}=${r.adults}+${r.children}`).join("&"), [roomsGuests]);
 
   return (
     <div className="bg-gray-50 min-h-screen pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-6 space-y-12">
+
         {/* Заголовок */}
-        <h1 className="text-4xl font-bold">Бронирование</h1>
+          <h1 className="text-4xl font-bold">Бронирование</h1>
+          {initialFetchError && (
+            <div className="text-sm text-yellow-700 bg-yellow-50 p-2 rounded mt-2">Не удалось загрузить начальные данные — попробуйте выполнить поиск вручную.</div>
+          )}
         <p className="text-gray-600">
-          С помощью формы ниже вы можете забронировать наши срубы в режиме онлайн и получить гарантированную бронь.
+          С помощью формы ниже вы можете забронировать наши номера в режиме онлайн и получить гарантированную бронь.
         </p>
 
         {/* форма дат и гостей */}
         <div className="bg-white shadow-md rounded-xl p-6 flex flex-col md:flex-row gap-4 items-start">
+          {error && (
+            <div className="w-full mb-2 text-sm text-red-600 font-medium">{error}</div>
+          )}
           {/* календарь */}
           <div className="relative" ref={calendarRef}>
             <div
               onClick={() => setShowCalendar((prev) => !prev)}
               className="border rounded-lg p-3 w-64 cursor-pointer bg-white"
+              role="button"
+              aria-expanded={showCalendar}
             >
               {dateRange[0]?.startDate?.toLocaleDateString("ru-RU")} —{" "}
               {dateRange[0]?.endDate?.toLocaleDateString("ru-RU")}
@@ -177,6 +215,8 @@ export default function CabinsPage() {
             <div
               onClick={() => setShowGuests(!showGuests)}
               className="border rounded-lg p-3 cursor-pointer bg-white w-64"
+              role="button"
+              aria-expanded={showGuests}
             >
               Гости: {totalAdults} взрослых
               {totalChildren > 0 && `, ${totalChildren} детей`} (
@@ -246,45 +286,54 @@ export default function CabinsPage() {
             )}
           </div>
 
-          <button
-            onClick={handleSearch}
-            className="px-6 py-2 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 shadow"
-          >
-            Найти
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSearch}
+              disabled={loading}
+              className={`px-6 py-2 rounded-lg text-white font-semibold shadow ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-700 hover:bg-green-800'}`}
+            >
+              {loading ? 'Поиск...' : 'Найти'}
+            </button>
+            {loading && <div className="text-sm text-gray-600">Загрузка...</div>}
+          </div>
         </div>
 
         {/* кнопки переключения */}
         <div className="flex justify-center gap-6 mb-8">
           <Link href="/booking">
-            <button className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 shadow">
+            <button className="px-6 py-2 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 shadow">
               Номера
             </button>
           </Link>
           <Link href="/lodge">
-            <button className="px-6 py-2 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800 shadow">
+            <button className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300 shadow">
               Срубы
             </button>
           </Link>
         </div>
 
-        {/* карточки срубов */}
+        {roomsData.length > 0 && (
+          <p className="text-lg text-gray-700">
+            Найдено свободных номеров: {" "}
+            <span className="font-semibold text-green-700">{roomsData.length}</span>
+          </p>
+        )}
+        {roomsData.length === 0 && searchPerformed && (
+          <p className="text-lg text-red-600">Нет доступных номеров на выбранные даты</p>
+        )}
+
+        {/* карточки с передачей данных */}
         <div className="space-y-12">
-          {loading ? (
-            <p className="text-gray-500">Загрузка...</p>
-          ) : cabins.length === 0 ? (
-            <p className="text-gray-500">Нет доступных срубов</p>
-          ) : (
-            cabins.map((cabin) => (
-            <CabinCard
-              key={cabin.id}
-              cabin={cabin}
-              startDate={dateRange[0]?.startDate}
-              endDate={dateRange[0]?.endDate}
+          {roomsData.map((room: Room) => (
+            <RoomCard
+              key={room.id}
+              room={room}
+              startDate={mounted ? dateRange[0]?.startDate || new Date() : new Date()}
+              endDate={mounted ? dateRange[0]?.endDate || new Date() : new Date()}
               guests={roomsGuests}
             />
-          ))
-          )}
+          ))}
         </div>
       </div>
     </div>

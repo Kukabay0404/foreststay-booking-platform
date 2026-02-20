@@ -10,8 +10,8 @@ class RoomBase(BaseModel):
     area: str
     beds: int
     tv: bool
-    price_weekdays: str = Field(..., alias="priceWeekdays")
-    price_weekend: str = Field(..., alias="priceWeekend")
+    price_weekdays: int = Field(..., alias="priceWeekdays")
+    price_weekend: int = Field(..., alias="priceWeekend")
     images: List[str]
 
     model_config = ConfigDict(
@@ -25,6 +25,24 @@ class RoomCreate(RoomBase):
 
 class RoomUpdate(RoomBase):
     pass
+
+class GuestInfoRoom(BaseModel):
+    adults: int
+    children: int = 0
+
+
+class SearchRequestRoom(BaseModel):
+    startDate: datetime
+    endDate: datetime
+    guests: List[GuestInfoRoom]
+
+    model_config = ConfigDict(from_attributes=True)
+
+class QuickSearchRequest(BaseModel):
+    startDate: datetime
+    endDate: datetime
+    adults: int
+    children: int = 0
 
 class RoomOut(RoomBase):
     id: int

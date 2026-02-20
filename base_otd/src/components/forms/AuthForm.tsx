@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/Input";
 import { toast } from "sonner"; 
+import { apiUrl } from "@/lib/api";
 
 export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,8 +26,8 @@ export default function AuthForm() {
 
     try {
       const url = isLogin
-        ? "http://127.0.0.1:8000/auth/login"
-        : "http://127.0.0.1:8000/auth/register";
+        ? apiUrl("/auth/login")
+        : apiUrl("/auth/register");
 
       const res = await fetch(url, {
         method: "POST",
@@ -53,7 +54,7 @@ export default function AuthForm() {
       if (isLogin) {
         localStorage.setItem("token", data.access_token);
         toast.success("✅ Успешный вход");
-        router.push("/dashboard");
+        router.push("/");
       } else {
         toast.success("✅ Регистрация прошла успешно");
         router.push("/auth");

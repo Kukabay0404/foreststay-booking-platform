@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/Input";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/api";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login", {
+      const res = await fetch(apiUrl("/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -32,7 +33,7 @@ export default function LoginForm() {
       localStorage.setItem("token", data.access_token);
 
       toast.success("✅ Успешный вход");
-      router.push("/dashboard");
+      router.push("/");
     } catch (err: any) {
       toast.error(err.message || "Ошибка входа");
     } finally {

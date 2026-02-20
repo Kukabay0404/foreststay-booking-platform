@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/Input";
 import { toast } from "sonner";
+import { apiUrl } from "@/lib/api";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function RegisterForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/register", {
+      const res = await fetch(apiUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

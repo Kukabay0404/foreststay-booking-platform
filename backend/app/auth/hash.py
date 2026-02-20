@@ -2,31 +2,30 @@ from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-
-SECRET_KEY = "supersecretkey"  # лучше вынести в .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+from app.core.config import settings
 
 
-def hash_password(password : str):
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash_password(password: str):
     return pwd_context.hash(password)
+
 
 def verify_access_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALG])
         email: str = payload.get("sub")
         if email is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Не удалось проверить токен",
+                detail="Could not validate token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return email
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Недействительный токен",
+            detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )

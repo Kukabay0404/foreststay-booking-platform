@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Input from "@/components/ui/Input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { API_BASE_URL } from "@/lib/api";
 
 interface User {
   id: number;
@@ -58,12 +60,30 @@ interface Cabin {
   images: string[];
 }
 
+interface Booking {
+  id: number;
+  object_type: "room" | "cabin";
+  object_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  start_date: string;
+  end_date: string;
+  status: "pending" | "confirmed" | "cancelled";
+  created_at: string;
+}
+
 export default function AdminPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [cabins, setCabins] = useState<Cabin[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusSavingId, setStatusSavingId] = useState<number | null>(null);
+  const apiBase = API_BASE_URL;
 
   // формы создания
   const [newUser, setNewUser] = useState<Partial<UserCreate>>({});
@@ -75,22 +95,59 @@ export default function AdminPage() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editingCabin, setEditingCabin] = useState<Cabin | null>(null);
 
+  const authHeaders = (withJson = false): HeadersInit => {
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+    if (withJson) {
+      return { ...headers, "Content-Type": "application/json" };
+    }
+    return headers;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, roomsRes, cabinsRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/user_admin/"),
-          fetch("http://127.0.0.1:8000/room_admin/"),
-          fetch("http://127.0.0.1:8000/cabin_admin/"),
+        const token = localStorage.getItem("token");
+        if (!token) {
+          router.replace("/auth/login");
+          return;
+        }
+
+        const meRes = await fetch(`${apiBase}/auth/me`, {
+          headers: authHeaders(),
+        });
+        if (!meRes.ok) {
+          localStorage.removeItem("token");
+          router.replace("/auth/login");
+          return;
+        }
+
+        const me = await meRes.json();
+        if (me.role !== "admin") {
+          router.replace("/");
+          return;
+        }
+
+        const [usersRes, roomsRes, cabinsRes, bookingsRes] = await Promise.all([
+          fetch(`${apiBase}/user_admin/`, { headers: authHeaders() }),
+          fetch(`${apiBase}/room_admin/`, { headers: authHeaders() }),
+          fetch(`${apiBase}/cabin_admin/`, { headers: authHeaders() }),
+          fetch(`${apiBase}/checkout/`, { headers: authHeaders() }),
         ]);
+
+        if ([usersRes, roomsRes, cabinsRes, bookingsRes].some((r) => !r.ok)) {
+          throw new Error("Failed to fetch admin data");
+        }
 
         const usersData = await usersRes.json();
         const roomsData = await roomsRes.json();
         const cabinsData = await cabinsRes.json();
+        const bookingsData = await bookingsRes.json();
 
         setUsers(Array.isArray(usersData) ? usersData : []);
         setRooms(Array.isArray(roomsData) ? roomsData : []);
         setCabins(Array.isArray(cabinsData) ? cabinsData : []);
+        setBookings(Array.isArray(bookingsData) ? bookingsData : []);
       } catch (err) {
         console.error(err);
         setError("Ошибка загрузки данных");
@@ -100,14 +157,15 @@ export default function AdminPage() {
     };
 
     fetchData();
-  }, []);
+  }, [router]);
 
   // ---------------- CRUD USERS ----------------
   const deleteUser = async (id: number) => {
     if (!confirm("Удалить пользователя?")) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/user_admin/${id}/`, {
+      const res = await fetch(`${apiBase}/user_admin/${id}/`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
       if (res.ok) setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch {
@@ -117,9 +175,9 @@ export default function AdminPage() {
 
   const createUser = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/register/", {
+      const res = await fetch(`${apiBase}/auth/register/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(newUser),
       });
       if (res.ok) {
@@ -135,9 +193,9 @@ export default function AdminPage() {
   const updateUser = async () => {
     if (!editingUser) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/auth/${editingUser.id}/`, {
+      const res = await fetch(`${apiBase}/auth/${editingUser.id}/`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(editingUser),
       });
       if (res.ok) {
@@ -153,8 +211,9 @@ export default function AdminPage() {
   const deleteRoom = async (id: number) => {
     if (!confirm("Удалить номер?")) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/room_admin/${id}/`, {
+      const res = await fetch(`${apiBase}/room_admin/${id}/`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
       if (res.ok) setRooms((prev) => prev.filter((r) => r.id !== id));
     } catch {
@@ -164,9 +223,9 @@ export default function AdminPage() {
 
   const createRoom = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/room_admin/", {
+      const res = await fetch(`${apiBase}/room_admin/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(newRoom),
       });
       if (res.ok) {
@@ -182,9 +241,9 @@ export default function AdminPage() {
   const updateRoom = async () => {
     if (!editingRoom) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/room_admin/${editingRoom.id}/`, {
+      const res = await fetch(`${apiBase}/room_admin/${editingRoom.id}/`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(editingRoom),
       });
       if (res.ok) {
@@ -201,8 +260,9 @@ export default function AdminPage() {
   const deleteCabin = async (id: number) => {
     if (!confirm("Удалить сруб?")) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/cabin_admin/${id}/`, {
+      const res = await fetch(`${apiBase}/cabin_admin/${id}/`, {
         method: "DELETE",
+        headers: authHeaders(),
       });
       if (res.ok) setCabins((prev) => prev.filter((c) => c.id !== id));
     } catch {
@@ -212,9 +272,9 @@ export default function AdminPage() {
 
   const createCabin = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/cabin_admin/", {
+      const res = await fetch(`${apiBase}/cabin_admin/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(newCabin),
       });
       if (res.ok) {
@@ -230,9 +290,9 @@ export default function AdminPage() {
   const updateCabin = async () => {
     if (!editingCabin) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/cabin_admin/${editingCabin.id}/`, {
+      const res = await fetch(`${apiBase}/cabin_admin/${editingCabin.id}/`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(editingCabin),
       });
       if (res.ok) {
@@ -244,6 +304,33 @@ export default function AdminPage() {
       alert("Ошибка обновления сруба");
     }
   };
+
+  const updateBookingStatus = async (
+    bookingId: number,
+    nextStatus: Booking["status"],
+  ) => {
+    setStatusSavingId(bookingId);
+    try {
+      const res = await fetch(`${apiBase}/checkout/admin/${bookingId}/status`, {
+        method: "PATCH",
+        headers: authHeaders(true),
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Не удалось обновить статус");
+      }
+
+      const updated = (await res.json()) as Booking;
+      setBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status } : b)),
+      );
+    } catch {
+      alert("Ошибка обновления статуса заявки");
+    } finally {
+      setStatusSavingId(null);
+    }
+  };
   if (loading) return <div className="p-6 text-center">Загрузка...</div>;
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
 
@@ -252,10 +339,11 @@ export default function AdminPage() {
       <h1 className="text-3xl font-bold text-center mb-8">Админ-панель</h1>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid grid-cols-6 gap-2">
+        <TabsList className="grid grid-cols-7 gap-2">
           <TabsTrigger value="users">Пользователи</TabsTrigger>
           <TabsTrigger value="rooms">Номера</TabsTrigger>
           <TabsTrigger value="cabins">Срубы</TabsTrigger>
+          <TabsTrigger value="bookings">Заявки</TabsTrigger>
           <TabsTrigger value="addUser">Создать пользователя</TabsTrigger>
           <TabsTrigger value="addRoom">Создать номер</TabsTrigger>
           <TabsTrigger value="addCabin">Создать сруб</TabsTrigger>
@@ -525,6 +613,68 @@ export default function AdminPage() {
           </table>
         </TabsContent>
 
+        <TabsContent value="bookings">
+          <table className="w-full border-collapse border mt-4">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border px-4 py-2">ID</th>
+                <th className="border px-4 py-2">Тип</th>
+                <th className="border px-4 py-2">Объект</th>
+                <th className="border px-4 py-2">Клиент</th>
+                <th className="border px-4 py-2">Период</th>
+                <th className="border px-4 py-2">Статус</th>
+                <th className="border px-4 py-2">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((b) => (
+                <tr key={b.id}>
+                  <td className="border px-4 py-2">{b.id}</td>
+                  <td className="border px-4 py-2">
+                    {b.object_type === "room" ? "Номер" : "Сруб"}
+                  </td>
+                  <td className="border px-4 py-2">#{b.object_id}</td>
+                  <td className="border px-4 py-2">
+                    {b.last_name} {b.first_name}
+                    <div className="text-xs text-gray-500">{b.email}</div>
+                  </td>
+                  <td className="border px-4 py-2">
+                    {new Date(b.start_date).toLocaleDateString("ru-RU")} -{" "}
+                    {new Date(b.end_date).toLocaleDateString("ru-RU")}
+                  </td>
+                  <td className="border px-4 py-2">
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={b.status}
+                      onChange={(e) => {
+                        const status = e.target.value as Booking["status"];
+                        setBookings((prev) =>
+                          prev.map((row) =>
+                            row.id === b.id ? { ...row, status } : row,
+                          ),
+                        );
+                      }}
+                    >
+                      <option value="pending">pending</option>
+                      <option value="confirmed">confirmed</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </td>
+                  <td className="border px-4 py-2">
+                    <Button
+                      onClick={() => updateBookingStatus(b.id, b.status)}
+                      disabled={statusSavingId === b.id}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {statusSavingId === b.id ? "Сохраняю..." : "Сохранить"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TabsContent>
+
         <TabsContent value="addUser">
           <div className="space-y-4 mt-4">
             <Input
@@ -734,4 +884,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

@@ -15,6 +15,8 @@ export default function Hero() {
   const [current, setCurrent] = useState(0);
   const [showGuests, setShowGuests] = useState(false);
   const [rooms, setRooms] = useState([{ adults: 2, children: 0 }]);
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
   // авто-слайд
   useEffect(() => {
@@ -50,6 +52,14 @@ export default function Hero() {
         }`
     )
     .join("; ");
+
+  const bookingHref = (() => {
+    const params = new URLSearchParams();
+    if (checkIn) params.set("checkIn", new Date(checkIn).toISOString());
+    if (checkOut) params.set("checkOut", new Date(checkOut).toISOString());
+    params.set("guests", JSON.stringify(rooms));
+    return `/booking?${params.toString()}`;
+  })();
 
   return (
     <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
@@ -114,13 +124,23 @@ export default function Hero() {
         {/* Заезд */}
         <div className="flex-1">
           <label className="block text-gray-600 text-sm">Заезд</label>
-          <input type="date" className="w-full border rounded-lg p-2" />
+          <input
+            type="date"
+            value={checkIn}
+            onChange={(e) => setCheckIn(e.target.value)}
+            className="w-full border rounded-lg p-2"
+          />
         </div>
 
         {/* Выезд */}
         <div className="flex-1">
           <label className="block text-gray-600 text-sm">Выезд</label>
-          <input type="date" className="w-full border rounded-lg p-2" />
+          <input
+            type="date"
+            value={checkOut}
+            onChange={(e) => setCheckOut(e.target.value)}
+            className="w-full border rounded-lg p-2"
+          />
         </div>
 
         {/* Гости */}

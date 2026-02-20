@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Enum, TIMESTAMP
+from sqlalchemy import String, Integer, Enum, TIMESTAMP, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from sqlalchemy.sql import func
@@ -13,6 +13,9 @@ class UserRole(str, enum.Enum):
 
 class User(Base):
     __tablename__ = 'users'
+    __table_args__ = (
+        Index("uq_users_email_lower", text("lower(email)"), unique=True),
+    )
 
     id : Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     email : Mapped[str] = mapped_column(String(120), unique=True, index=True, nullable=False)

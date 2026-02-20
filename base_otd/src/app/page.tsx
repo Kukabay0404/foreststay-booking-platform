@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +30,9 @@ export default function Home() {
   // ---- Состояние для гостей ----
   const [showGuests, setShowGuests] = useState(false);
   const [rooms, setRooms] = useState([{ adults: 2, children: 0 }]);
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const guestsRef = useRef<HTMLDivElement>(null);
 
   const updateRoom = (index: number, type: "adults" | "children", value: number) => {
     setRooms((prev) =>
@@ -56,41 +59,27 @@ export default function Home() {
     )
     .join("; ");
 
+  const bookingHref = (() => {
+    const params = new URLSearchParams();
+    if (checkIn) params.set("checkIn", new Date(checkIn).toISOString());
+    if (checkOut) params.set("checkOut", new Date(checkOut).toISOString());
+    params.set("guests", JSON.stringify(rooms));
+    return `/booking?${params.toString()}`;
+  })();
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (guestsRef.current && !guestsRef.current.contains(event.target as Node)) {
+        setShowGuests(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   return (
     <main className="w-full min-h-screen bg-white text-gray-800 relative">
-      {/* Header */}
-      <header className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-20">
-        <Link href="/" className="text-2xl font-bold text-white">
-          Лесное Озеро
-        </Link>
-        {/* text-2xl font-bold text-white */}
-        <nav className="hidden md:flex gap-6 text-white">
-          <a href="#about" className="hover:underline">
-            О базе
-          </a>
-          <a href="#accommodation" className="hover:underline">
-            Размещение
-          </a>
-          <a href="#services" className="hover:underline">
-            Услуги
-          </a>
-          <a href="#contacts" className="hover:underline">
-            Контакты
-          </a>
-        </nav>
-        <div className="flex items-center gap-4">
-          <a href="tel:+79001234567" className="text-white">
-            +7 (900) 123-45-67
-          </a>
-          <Link href="/auth/login">
-            <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white">
-              Войти/Зарегестрироваться
-            </button>
-          </Link>
-        </div>
-      </header>
-
       {/* Hero Section with Slideshow */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         {/* Слайд-шоу */}
@@ -122,7 +111,7 @@ export default function Home() {
           <p className="text-lg md:text-xl mb-6">
             Уютные домики, тишина леса и комфорт для всей семьи
           </p>
-          <Link href="/booking">
+          <Link href={bookingHref}>
             <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl shadow-lg text-lg">
               Забронировать номер
             </button>
@@ -152,15 +141,25 @@ export default function Home() {
         >
           <div className="flex-1">
             <label className="block text-gray-600 text-sm">Заезд</label>
-            <input type="date" className="w-full border rounded-lg p-2" />
+                        <input
+              type="date"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
+              className="w-full border rounded-lg p-2"
+            />
           </div>
           <div className="flex-1">
             <label className="block text-gray-600 text-sm">Выезд</label>
-            <input type="date" className="w-full border rounded-lg p-2" />
+                        <input
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+              className="w-full border rounded-lg p-2"
+            />
           </div>
 
           {/* Гости */}
-          <div className="flex-1 relative"></div>
+          <div className="flex-1 relative" ref={guestsRef}>
             <label className="block text-gray-600 text-sm">Гости</label>
             <div
               onClick={() => setShowGuests(!showGuests)}
@@ -170,97 +169,99 @@ export default function Home() {
             </div>
 
             {showGuests && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute bottom-full mb-2 left-0 w-full max-w-sm bg-white shadow-lg rounded-xl border p-4 z-30"
-                  style={{ maxHeight: "400px", overflowY: "auto" }} // ограничиваем высоту
-                >
-                  <h3 className="text-lg font-semibold mb-3">Количество гостей</h3>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute bottom-full mb-2 left-0 w-[24rem] max-w-[calc(100vw-2rem)] bg-white shadow-lg rounded-xl border p-4 z-30"
+                style={{ maxHeight: "400px", overflowY: "auto" }}
+              >
+                <h3 className="text-lg font-semibold mb-3">Количество гостей</h3>
 
-                  {rooms.map((room, index) => (
-                    <div
-                      key={index}
-                      className="mb-4 border-b pb-3 last:border-0 last:pb-0"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Номер {index + 1}</p>
-                        {rooms.length > 1 && (
-                          <button
-                            onClick={() => removeRoom(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            🗑
-                          </button>
-                        )}
-                      </div>
+                {rooms.map((room, index) => (
+                  <div
+                    key={index}
+                    className="mb-4 border-b pb-3 last:border-0 last:pb-0"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="font-medium">Номер {index + 1}</p>
+                      {rooms.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRoom(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Удалить
+                        </button>
+                      )}
+                    </div>
 
-                      {/* Взрослые */}
-                      <div className="flex justify-between items-center mb-3">
-                        <span>Взрослые</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateRoom(index, "adults", room.adults - 1)}
-                            className="px-3 py-1 border rounded-lg"
-                            disabled={room.adults <= 1}
-                          >
-                            –
-                          </button>
-                          <span>{room.adults}</span>
-                          <button
-                            onClick={() => updateRoom(index, "adults", room.adults + 1)}
-                            className="px-3 py-1 border rounded-lg"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Дети */}
-                      <div className="flex justify-between items-center">
-                        <span>Дети (до 18)</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => updateRoom(index, "children", room.children - 1)}
-                            className="px-3 py-1 border rounded-lg"
-                            disabled={room.children <= 0}
-                          >
-                            –
-                          </button>
-                          <span>{room.children}</span>
-                          <button
-                            onClick={() => updateRoom(index, "children", room.children + 1)}
-                            className="px-3 py-1 border rounded-lg"
-                          >
-                            +
-                          </button>
-                        </div>
+                    <div className="flex justify-between items-center mb-3">
+                      <span>Взрослые</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateRoom(index, "adults", room.adults - 1)}
+                          className="px-3 py-1 border rounded-lg"
+                          disabled={room.adults <= 1}
+                        >
+                          -
+                        </button>
+                        <span>{room.adults}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRoom(index, "adults", room.adults + 1)}
+                          className="px-3 py-1 border rounded-lg"
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
-                  ))}
 
-                  {/* Добавить номер */}
-                  <button
-                    onClick={addRoom}
-                    className="w-full border border-green-600 text-green-600 py-2 rounded-lg mb-3 hover:bg-green-50"
-                  >
-                    + Добавить номер
-                  </button>
-
-                  {/* Готово */}
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => setShowGuests(false)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
-                    >
-                      Готово
-                    </button>
+                    <div className="flex justify-between items-center">
+                      <span>Дети (до 18)</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updateRoom(index, "children", room.children - 1)}
+                          className="px-3 py-1 border rounded-lg"
+                          disabled={room.children <= 0}
+                        >
+                          -
+                        </button>
+                        <span>{room.children}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateRoom(index, "children", room.children + 1)}
+                          className="px-3 py-1 border rounded-lg"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </motion.div>
-              )}
+                ))}
 
+                <button
+                  type="button"
+                  onClick={addRoom}
+                  className="w-full border border-green-600 text-green-600 py-2 rounded-lg mb-3 hover:bg-green-50"
+                >
+                  + Добавить номер
+                </button>
 
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowGuests(false)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                  >
+                    Готово
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
 
           <div className="flex-1">
             <label className="block text-gray-600 text-sm">Промокод</label>
@@ -270,7 +271,7 @@ export default function Home() {
               className="w-full border rounded-lg p-2"
             />
           </div>
-          <Link href="/booking">
+          <Link href={bookingHref}>
             <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-white self-end md:self-center">
               Найти номер
             </button>
@@ -294,7 +295,7 @@ export default function Home() {
               Уютные деревянные дома для больших компаний и семей.
               Вместимость до 10 человек, просторные гостиные и собственная кухня.
             </p>
-            <a href="/rooms" className="text-blue-700 font-semibold hover:underline">
+            <a href="/booking" className="text-blue-700 font-semibold hover:underline">
               Подробнее →
             </a>
           </div>
@@ -576,3 +577,4 @@ export default function Home() {
     </main>
   );
 }
+
