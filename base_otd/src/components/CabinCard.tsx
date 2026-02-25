@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { normalizeImagePath } from "@/lib/utils";
 
 export interface Cabin {
   id: number;
@@ -21,17 +22,6 @@ export interface Cabin {
 export interface GuestInfo {
   adults: number;
   children: number;
-}
-
-function normalizeImagePath(path: string): string {
-  if (!path) return "/placeholder.jpg";
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.includes("\\") || path.includes(":")) {
-    const fileName = path.split("\\").pop();
-    return `/cabins/${fileName}`;
-  }
-  if (!path.startsWith("/")) return `/cabins/${path}`;
-  return path;
 }
 
 export default function CabinCard({

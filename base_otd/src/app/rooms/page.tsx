@@ -1,8 +1,11 @@
-"use client";
+﻿"use client";
+
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
 import { apiUrl } from "@/lib/api";
+import { normalizeImagePath } from "@/lib/utils";
 
 interface Room {
   id: number;
@@ -48,31 +51,6 @@ export default function RoomsPage() {
   );
 }
 
-// функция нормализации пути
-  function normalizeImagePath(path: string): string {
-    if (!path) return "/placeholder.jpg";
-
-    // внешняя ссылка
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-
-    // windows-путь (A:\... или C:\...)
-    if (path.includes("\\") || path.includes(":")) {
-      const fileName = path.split("\\").pop(); // lux1.jpg
-      return `/rooms/${fileName}`;
-    }
-
-    // относительный путь (например "201/lux1.jpg")
-    if (!path.startsWith("/")) {
-      return `/rooms/${path}`;
-    }
-
-    // если уже нормальный путь "/rooms/xxx.jpg"
-    return path;
-  }
-
-
 function RoomCard({ room }: { room: Room }) {
   const [currentImage, setCurrentImage] = useState(0);
 
@@ -94,22 +72,22 @@ function RoomCard({ room }: { room: Room }) {
           <button
             onClick={() =>
               setCurrentImage((prev) =>
-                prev === 0 ? room.images.length - 1 : prev - 1
+                prev === 0 ? room.images.length - 1 : prev - 1,
               )
             }
             className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded p-2 shadow"
           >
-            ←
+            {"<"}
           </button>
           <button
             onClick={() =>
               setCurrentImage((prev) =>
-                prev === room.images.length - 1 ? 0 : prev + 1
+                prev === room.images.length - 1 ? 0 : prev + 1,
               )
             }
             className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded p-2 shadow"
           >
-            →
+            {">"}
           </button>
         </div>
         <div className="flex gap-3 mt-4">
@@ -135,8 +113,7 @@ function RoomCard({ room }: { room: Room }) {
       <div className="space-y-3">
         <h2 className="text-xl font-bold">{room.title}</h2>
         <p>
-          <span className="font-semibold">Категория аппартамента:</span>{" "}
-          {room.category}
+          <span className="font-semibold">Категория аппартамента:</span> {room.category}
         </p>
         <p>
           <span className="font-semibold">Комнат:</span> {room.rooms}
@@ -148,8 +125,7 @@ function RoomCard({ room }: { room: Room }) {
           <span className="font-semibold">Спальных мест:</span> {room.beds}
         </p>
         <p>
-          <span className="font-semibold">Телевизор:</span>{" "}
-          {room.tv ? "да" : "нет"}
+          <span className="font-semibold">Телевизор:</span> {room.tv ? "да" : "нет"}
         </p>
         <div className="mt-4 space-y-1">
           <p>

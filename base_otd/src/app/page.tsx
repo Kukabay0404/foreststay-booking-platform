@@ -1,15 +1,16 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { resolveMediaUrl } from "@/lib/media";
 
 
 const images = [
-  "https://gubdaily.ru/wp-content/uploads/2021/07/38a7c3a072849af1c0319.jpg",
-  "https://avatars.mds.yandex.net/get-altay/5115998/2a0000018ec1c12360bec6d53cad7ae16082/orig",
-  "https://avatars.mds.yandex.net/i?id=d065ca4b025eab309ea6407b7d56e2a3_l-5270141-images-thumbs&n=13",
+  "homepage/110d0083003b.jpg",
+  "homepage/66485a7cf828.jpg",
+  "homepage/66485a7cf828.jpg",
 ];
 
 export default function Home() {
@@ -87,7 +88,7 @@ export default function Home() {
           <AnimatePresence>
             <motion.img
               key={current}
-              src={images[current]}
+              src={resolveMediaUrl(images[current])}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -111,7 +112,7 @@ export default function Home() {
           <p className="text-lg md:text-xl mb-6">
             Уютные домики, тишина леса и комфорт для всей семьи
           </p>
-          <Link href={bookingHref}>
+          <Link href="/booking">
             <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl shadow-lg text-lg">
               Забронировать номер
             </button>
@@ -279,12 +280,12 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Секция Дома = "О базе" */}
+      {/* Секция Дома = "Рћ базе" */}
       <section id="about" className="py-16 bg-white">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-6">
           <div>
             <img
-              src="https://i.pinimg.com/originals/26/0d/b0/260db0d6dfd8d2d16b1792fd42b6a5f3.jpg"
+              src={resolveMediaUrl("homepage/110d0083003b.jpg")}
               alt="Большие дома"
               className="rounded-2xl shadow-lg"
             />
@@ -314,13 +315,13 @@ export default function Home() {
               Здесь можно насладиться тишиной и красотой природы.
             </p>
             <video controls className="rounded-2xl shadow-lg w-full">
-              <source src="/videos/nature.mp4" type="video/mp4" />
+              <source src={resolveMediaUrl("homepage/nature.mp4")} type="video/mp4" />
               Ваш браузер не поддерживает видео.
             </video>
           </div>
           <div className="order-1 md:order-2">
             <img
-              src="/img/nature1.jpg"
+              src={resolveMediaUrl("homepage/nature1.jpg")}
               alt="Природа"
               className="rounded-2xl shadow-lg"
             />
@@ -333,7 +334,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-6">
           <div>
             <img
-              src="https://s0.rbk.ru/v6_top_pics/media/img/4/45/755126465208454.png"
+              src={resolveMediaUrl("homepage/eb69d2216306.png")}
               alt="Ресторан"
               className="rounded-2xl shadow-lg"
             />
@@ -356,19 +357,19 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-10">Активности</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src="https://i.pinimg.com/originals/f2/e7/71/f2e771c059ef880df98d264d77a7498d.jpg" alt="Баня" className="rounded-xl mb-4" />
+              <img src={resolveMediaUrl("homepage/299594cda2a2.jpg")} alt="Баня" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Баня</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src="https://585327db-1738-4319-8825-b4d66fe3e73d.selstorage.ru/9c0cfdc7-3bbf-4665-bdc9-cf87ad68dcaf.jpg" alt="Прогулки" className="rounded-xl mb-4" />
+              <img src={resolveMediaUrl("homepage/bdad3b29c7a5.jpg")} alt="Прогулки" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Прогулки на лошадях</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src="https://wallpapers.com/images/featured-full/fishing-rod-p0iuhxbkev0lzuvo.jpg" alt="Рыбалка" className="rounded-xl mb-4" />
+              <img src={resolveMediaUrl("homepage/44babb782dab.jpg")} alt="Рыбалка" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Рыбалка</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src="https://kartin.papik.pro/uploads/posts/2023-07/1689305730_kartin-papik-pro-p-kartinki-detskii-park-ili-detskaya-ploshch-54.jpg" alt="Детская площадка" className="rounded-xl mb-4" />
+              <img src={resolveMediaUrl("homepage/0f0244d6800a.jpg")} alt="Детская площадка" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Детская площадка</h3>
             </div>
           </div>
@@ -390,7 +391,7 @@ export default function Home() {
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <Link href="/summer">
                 <img
-                  src="https://www.slivki.by/znijki-media/w1044_644/default/1009921/1648645030_Screenshot_1.jpg"
+                  src={resolveMediaUrl("homepage/a37ddcf0e3b2.jpg")}
                   alt="Летний отдых"
                   className="w-full h-64 object-cover cursor-pointer"
                 />
@@ -404,7 +405,7 @@ export default function Home() {
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <Link href="/winter">
               <img
-                src="https://static.tildacdn.com/tild6165-3539-4335-b565-373466663064/photo_52333324341861.jpg"
+                src={resolveMediaUrl("homepage/5925d31146ff.jpg")}
                 alt="Зимний отдых"
                 className="w-full h-64 object-cover cursor-pointer"
               />
@@ -442,37 +443,37 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="https://avatars.mds.yandex.net/i?id=d065ca4b025eab309ea6407b7d56e2a3_l-5270141-images-thumbs&n=13"
+              src={resolveMediaUrl("homepage/66485a7cf828.jpg")}
               alt="Домики"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="https://i.pinimg.com/originals/26/0d/b0/260db0d6dfd8d2d16b1792fd42b6a5f3.jpg"
+              src={resolveMediaUrl("homepage/110d0083003b.jpg")}
               alt="Беседки"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="/img/nature1.jpg"
+              src={resolveMediaUrl("homepage/nature1.jpg")}
               alt="Природа"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="https://s0.rbk.ru/v6_top_pics/media/img/4/45/755126465208454.png"
+              src={resolveMediaUrl("homepage/eb69d2216306.png")}
               alt="Ресторан"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="https://wallpapers.com/images/featured-full/fishing-rod-p0iuhxbkev0lzuvo.jpg"
+              src={resolveMediaUrl("homepage/44babb782dab.jpg")}
               alt="Рыбалка"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
-              src="https://kartin.papik.pro/uploads/posts/2023-07/1689305730_kartin-papik-pro-p-kartinki-detskii-park-ili-detskaya-ploshch-54.jpg"
+              src={resolveMediaUrl("homepage/0f0244d6800a.jpg")}
               alt="Детская площадка"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
@@ -491,7 +492,7 @@ export default function Home() {
               Примерное время в пути от Караганды до зоны отдыха «Лесное Озеро» — 20 минут.
             </p>
             <a
-              href="https://2gis.kz/astana/search/Зона%20отдыха%20BalQaragаi"
+              href="https://2gis.kz/astana/search/Зона%20отдыха%20BalQaragai"
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3 border border-white rounded-lg hover:bg-white hover:text-teal-900 transition"
@@ -570,11 +571,12 @@ export default function Home() {
       </div>
 
       <div className="text-center text-gray-500 mt-12">
-        © {new Date().getFullYear()} Лесное Озеро. Все права защищены.
+        В© {new Date().getFullYear()} Лесное Озеро. Все права защищены.
       </div>
     </footer>
 
     </main>
   );
 }
+
 

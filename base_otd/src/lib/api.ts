@@ -1,9 +1,14 @@
 const rawBaseUrl =
   process.env.NEXT_PUBLIC_BACKEND_URL ??
-  process.env.BACKEND_URL ??
-  "http://127.0.0.1:8000";
+  process.env.BACKEND_URL;
 
-export const API_BASE_URL = rawBaseUrl.replace(/\/$/, "");
+if (!rawBaseUrl && process.env.NODE_ENV !== "production") {
+  console.warn(
+    "API base URL is not configured. Set NEXT_PUBLIC_BACKEND_URL in base_otd/.env.local",
+  );
+}
+
+export const API_BASE_URL = (rawBaseUrl ?? "").replace(/\/$/, "");
 
 export function apiUrl(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

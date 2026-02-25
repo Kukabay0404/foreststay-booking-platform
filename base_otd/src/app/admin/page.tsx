@@ -1,4 +1,4 @@
-// src/app/admin/page.tsx
+﻿// src/app/admin/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,6 +16,18 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { API_BASE_URL } from "@/lib/api";
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
+type UploadTarget = "newRoom" | "editRoom" | "newCabin" | "editCabin";
+
+interface PresignUploadResponse {
+  uploadUrl: string;
+  fileKey: string;
+  publicUrl: string;
+  requiredHeaders?: Record<string, string>;
+}
 
 interface User {
   id: number;
@@ -94,6 +106,8 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editingCabin, setEditingCabin] = useState<Cabin | null>(null);
+  const [uploadingTarget, setUploadingTarget] = useState<UploadTarget | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const authHeaders = (withJson = false): HeadersInit => {
     const token = localStorage.getItem("token");
@@ -102,6 +116,112 @@ export default function AdminPage() {
       return { ...headers, "Content-Type": "application/json" };
     }
     return headers;
+  };
+
+  const parseImageUrls = (value: string): string[] =>
+    value
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean);
+
+  const validateImageFile = (file: File): string | null => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return "Допустимы только файлы JPG, PNG или WEBP.";
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return "Файл слишком большой. Максимум 10 MB.";
+    }
+    return null;
+  };
+
+  const uploadImageToR2 = async (
+    file: File,
+    folder: "rooms" | "cabins",
+  ): Promise<PresignUploadResponse> => {
+    const presignRes = await fetch(`${apiBase}/media/presign-upload`, {
+      method: "POST",
+      headers: authHeaders(true),
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        fileSize: file.size,
+        folder,
+      }),
+    });
+
+    if (!presignRes.ok) {
+      let message = "Не удалось получить ссылку для загрузки";
+      try {
+        const body = await presignRes.json();
+        if (typeof body?.detail === "string") {
+          message = body.detail;
+        }
+      } catch {
+        // ignore invalid json error
+      }
+      throw new Error(message);
+    }
+
+    const presignData = (await presignRes.json()) as PresignUploadResponse;
+    const uploadRes = await fetch(presignData.uploadUrl, {
+      method: "PUT",
+      headers: presignData.requiredHeaders ?? { "Content-Type": file.type },
+      body: file,
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error("Не удалось загрузить файл в хранилище");
+    }
+    return presignData;
+  };
+
+  const handleImageUpload = async (
+    file: File | null,
+    folder: "rooms" | "cabins",
+    target: UploadTarget,
+  ) => {
+    if (!file) return;
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setUploadError(validationError);
+      return;
+    }
+
+    setUploadError(null);
+    setUploadingTarget(target);
+
+    try {
+      const uploaded = await uploadImageToR2(file, folder);
+
+      if (target === "newRoom") {
+        setNewRoom((prev) => ({
+          ...prev,
+          images: [...(prev.images ?? []), uploaded.fileKey],
+        }));
+      } else if (target === "editRoom") {
+        setEditingRoom((prev) =>
+          prev
+            ? { ...prev, images: [...(prev.images ?? []), uploaded.fileKey] }
+            : prev,
+        );
+      } else if (target === "newCabin") {
+        setNewCabin((prev) => ({
+          ...prev,
+          images: [...(prev.images ?? []), uploaded.fileKey],
+        }));
+      } else {
+        setEditingCabin((prev) =>
+          prev
+            ? { ...prev, images: [...(prev.images ?? []), uploaded.fileKey] }
+            : prev,
+        );
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Ошибка загрузки файла";
+      setUploadError(message);
+    } finally {
+      setUploadingTarget(null);
+    }
   };
 
   useEffect(() => {
@@ -337,6 +457,11 @@ export default function AdminPage() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-8">Админ-панель</h1>
+      {uploadError && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {uploadError}
+        </div>
+      )}
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid grid-cols-7 gap-2">
@@ -383,7 +508,7 @@ export default function AdminPage() {
                           onClick={() => setEditingUser({ ...u })}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          ✏️ Редактировать
+                          Редактировать
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -466,7 +591,7 @@ export default function AdminPage() {
                           onClick={() => setEditingRoom({ ...r })}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          ✏️ Редактировать
+                          Редактировать
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -505,6 +630,30 @@ export default function AdminPage() {
                                 setEditingRoom({ ...editingRoom, priceWeekend: e.target.value })
                               }
                             />
+                            <Input
+                              placeholder="URL картинок (через запятую)"
+                              value={editingRoom.images?.join(", ") || ""}
+                              onChange={(e) =>
+                                setEditingRoom({
+                                  ...editingRoom,
+                                  images: parseImageUrls(e.target.value),
+                                })
+                              }
+                            />
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-room-image-upload">Загрузить изображение (R2)</Label>
+                              <Input
+                                id="edit-room-image-upload"
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                  handleImageUpload(e.target.files?.[0] ?? null, "rooms", "editRoom")
+                                }
+                              />
+                              {uploadingTarget === "editRoom" && (
+                                <p className="text-sm text-gray-600">Загрузка файла...</p>
+                              )}
+                            </div>
                             <Button onClick={updateRoom} className="bg-green-600 text-white">
                               Сохранить
                             </Button>
@@ -560,7 +709,7 @@ export default function AdminPage() {
                           onClick={() => setEditingCabin({ ...c })}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          ✏️ Редактировать
+                          Редактировать
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -599,6 +748,30 @@ export default function AdminPage() {
                                 })
                               }
                             />
+                            <Input
+                              placeholder="URL картинок (через запятую)"
+                              value={editingCabin.images?.join(", ") || ""}
+                              onChange={(e) =>
+                                setEditingCabin({
+                                  ...editingCabin,
+                                  images: parseImageUrls(e.target.value),
+                                })
+                              }
+                            />
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-cabin-image-upload">Загрузить изображение (R2)</Label>
+                              <Input
+                                id="edit-cabin-image-upload"
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                  handleImageUpload(e.target.files?.[0] ?? null, "cabins", "editCabin")
+                                }
+                              />
+                              {uploadingTarget === "editCabin" && (
+                                <p className="text-sm text-gray-600">Загрузка файла...</p>
+                              )}
+                            </div>
                             <Button onClick={updateCabin} className="bg-green-600 text-white">
                               Сохранить
                             </Button>
@@ -792,17 +965,31 @@ export default function AdminPage() {
               setNewRoom({ ...newRoom, priceWeekend: e.target.value })
             }
           />
-          {/* ✅ нормализуем URL картинок */}
+          {/* нормализуем URL картинок */}
           <Input
             placeholder="URL картинок (через запятую)"
             value={newRoom.images?.join(", ") || ""}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setNewRoom({
                 ...newRoom,
-                images: e.target.value.split(",").map((url) => url.trim()),
+                images: parseImageUrls(e.target.value),
               })
             }
           />
+          <div className="space-y-2">
+            <Label htmlFor="room-image-upload">Загрузить изображение (R2)</Label>
+            <Input
+              id="room-image-upload"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleImageUpload(e.target.files?.[0] ?? null, "rooms", "newRoom")
+              }
+            />
+            {uploadingTarget === "newRoom" && (
+              <p className="text-sm text-gray-600">Загрузка файла...</p>
+            )}
+          </div>
           <Button onClick={createRoom} className="bg-green-700 text-white">
             Создать номер
           </Button>
@@ -871,10 +1058,24 @@ export default function AdminPage() {
               onChange={(e) =>
                 setNewCabin({
                   ...newCabin,
-                  images: e.target.value.split(",").map((url) => url.trim()),
+                  images: parseImageUrls(e.target.value),
                 })
               }
             />
+            <div className="space-y-2">
+              <Label htmlFor="cabin-image-upload">Загрузить изображение (R2)</Label>
+              <Input
+                id="cabin-image-upload"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleImageUpload(e.target.files?.[0] ?? null, "cabins", "newCabin")
+                }
+              />
+              {uploadingTarget === "newCabin" && (
+                <p className="text-sm text-gray-600">Загрузка файла...</p>
+              )}
+            </div>
             <Button onClick={createCabin} className="bg-green-700 text-white">
               Создать сруб
             </Button>
@@ -884,3 +1085,14 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

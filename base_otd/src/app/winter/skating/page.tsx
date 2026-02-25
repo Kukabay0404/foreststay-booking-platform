@@ -1,17 +1,26 @@
-// app/skating/page.tsx
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
+import { resolveMediaUrl } from "@/lib/media";
+
+const skatingImages = {
+  hero: "katok/funny-klev-club-p-smeshnie-kartinki-katanie-na-konkakh-31.jpg",
+  gallery: [
+    "katok/89d7b5042766a8c1cfca03e68929ab52.jpg",
+    "katok/9a209be2a15d4e528e4bacb48d31.jpg",
+    "katok/bcd8e9c6de5e4f055199884693ccf44f.jpg",
+  ],
+};
 
 export default function SkatingPage() {
   return (
     <main className="w-full min-h-screen bg-gray-50 text-gray-800">
-      {/* Отступ сверху */}
       <div className="h-12" />
 
-      {/* Hero-блок */}
-      <section className="relative h-[70vh] flex items-center justify-center bg-cover bg-center rounded-b-3xl overflow-hidden shadow-md"
-        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1608158899438-554d5a1ebadc?auto=format&fit=crop&w=1600&q=80')" }}>
+      <section
+        className="relative h-[70vh] flex items-center justify-center bg-cover bg-center rounded-b-3xl overflow-hidden shadow-md"
+        style={{ backgroundImage: `url('${resolveMediaUrl(skatingImages.hero)}')` }}
+      >
         <div className="absolute inset-0 bg-white/30 backdrop-blur-sm" />
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -28,34 +37,27 @@ export default function SkatingPage() {
         </motion.div>
       </section>
 
-      {/* Описание */}
       <section className="max-w-4xl mx-auto px-6 py-12 text-center">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">Лёд, музыка и веселье</h2>
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">Лед, музыка и веселье</h2>
         <p className="text-lg text-gray-600 leading-relaxed mb-6">
-          Наш каток под открытым небом — это идеальное место для зимних развлечений. 
-          Вас ждёт ухоженный лёд, тёплое освещение, музыка и горячие напитки в уютном кафе.
+          Наш каток под открытым небом это идеальное место для зимних развлечений.
+          Вас ждет ухоженный лед, теплое освещение, музыка и горячие напитки в уютном кафе.
           Коньки можно взять напрокат на месте, а для новичков предусмотрены инструкторы.
         </p>
       </section>
 
-      {/* Галерея с эффектом карточек */}
       <section className="max-w-6xl mx-auto px-6 pb-16 grid md:grid-cols-3 gap-6">
-        {[
-          "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1609027988307-70e3f6c8e3f4?auto=format&fit=crop&w=800&q=80",
-          "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=800&q=80",
-        ].map((src, i) => (
+        {skatingImages.gallery.map((src, i) => (
           <motion.div
-            key={i}
+            key={src}
             whileHover={{ scale: 1.05 }}
             className="rounded-2xl overflow-hidden shadow-lg bg-white"
           >
-            <img src={src} alt={`Коньки ${i + 1}`} className="w-full h-64 object-cover" />
+            <img src={resolveMediaUrl(src)} alt={`Каток ${i + 1}`} className="w-full h-64 object-cover" />
           </motion.div>
         ))}
       </section>
 
-      {/* Блок с CTA */}
       <section className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center py-12">
         <h2 className="text-3xl font-bold mb-4">Погрузитесь в атмосферу зимней сказки</h2>
         <p className="mb-6 text-lg">Забронируйте катание на коньках прямо сейчас!</p>

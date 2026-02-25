@@ -8,7 +8,6 @@ import Link from "next/link";
 const images = [
   "https://gubdaily.ru/wp-content/uploads/2021/07/38a7c3a072849af1c0319.jpg",
   "https://avatars.mds.yandex.net/get-altay/5115998/2a0000018ec1c12360bec6d53cad7ae16082/orig",
-  "https://avatars.mds.yandex.net/i?id=d065ca4b025eab309ea6407b7d56e2a3_l-5270141-images-thumbs&n=13",
 ];
 
 export default function Hero() {

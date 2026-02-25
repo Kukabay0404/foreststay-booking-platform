@@ -1,8 +1,17 @@
-// app/catalog/aquapark/page.tsx
-
-"use client";
+﻿"use client";
 
 import { useState } from "react";
+import { resolveMediaUrl } from "@/lib/media";
+
+const waterpoolImages = {
+  banner: "summer/waterpool/banner.jpg",
+  action: "summer/waterpool/action.jpg",
+  gallery: [
+    "summer/waterpool/gallery1.jpg",
+    "summer/waterpool/gallery2.jpg",
+    "summer/waterpool/gallery3.jpg",
+  ],
+};
 
 export default function AquaparkCatalogPage() {
   const [date, setDate] = useState("");
@@ -22,10 +31,9 @@ export default function AquaparkCatalogPage() {
 
   return (
     <div className="bg-white text-gray-900 pt-12">
-      {/* Баннер */}
       <section className="relative h-[80vh] flex items-center justify-center">
         <img
-          src="/images/aquapark-banner.jpg"
+          src={resolveMediaUrl(waterpoolImages.banner)}
           alt="Аквапарк и бассейн"
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -36,14 +44,13 @@ export default function AquaparkCatalogPage() {
         </div>
       </section>
 
-      {/* Блок с описанием */}
       <section className="max-w-6xl mx-auto py-16 px-6 grid md:grid-cols-2 gap-12 items-center">
         <div>
           <h2 className="text-3xl font-bold mb-4">Веселье и отдых для всей семьи</h2>
           <p className="text-lg leading-relaxed mb-6">
-            У нас вы найдете просторный бассейн и современный аквапарк с
-            водными горками для детей и взрослых. Идеальное место для отдыха в
-            жаркие дни, семейных выходных или дружеских компаний.
+            У нас вы найдете просторный бассейн и современный аквапарк с водными горками
+            для детей и взрослых. Идеальное место для отдыха в жаркие дни,
+            семейных выходных или дружеских компаний.
           </p>
           <ul className="list-disc list-inside text-lg space-y-2">
             <li>Большой бассейн для плавания</li>
@@ -54,30 +61,29 @@ export default function AquaparkCatalogPage() {
         </div>
         <div>
           <img
-            src="/images/aquapark-action.jpg"
+            src={resolveMediaUrl(waterpoolImages.action)}
             alt="Аквапарк"
             className="rounded-2xl shadow-lg"
           />
         </div>
       </section>
 
-      {/* Галерея */}
       <section className="bg-gray-100 py-16">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-10">Фотогалерея</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <img
-              src="/images/aquapark1.jpg"
+              src={resolveMediaUrl(waterpoolImages.gallery[0])}
               alt="Аквапарк фото 1"
               className="rounded-xl shadow-md"
             />
             <img
-              src="/images/aquapark2.jpg"
+              src={resolveMediaUrl(waterpoolImages.gallery[1])}
               alt="Аквапарк фото 2"
               className="rounded-xl shadow-md"
             />
             <img
-              src="/images/aquapark3.jpg"
+              src={resolveMediaUrl(waterpoolImages.gallery[2])}
               alt="Аквапарк фото 3"
               className="rounded-xl shadow-md"
             />
@@ -85,14 +91,10 @@ export default function AquaparkCatalogPage() {
         </div>
       </section>
 
-      {/* Форма бронирования */}
       <section className="py-16 relative">
         <div className="max-w-3xl mx-auto px-6 bg-white rounded-2xl shadow-xl p-8 border">
-          <h2 className="text-3xl font-bold text-center mb-6">
-            Забронировать посещение
-          </h2>
+          <h2 className="text-3xl font-bold text-center mb-6">Забронировать посещение</h2>
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Дата */}
             <div>
               <label className="block text-gray-700 mb-2">Дата</label>
               <input
@@ -104,7 +106,6 @@ export default function AquaparkCatalogPage() {
               />
             </div>
 
-            {/* Время */}
             <div>
               <label className="block text-gray-700 mb-2">Время</label>
               <input
@@ -116,11 +117,8 @@ export default function AquaparkCatalogPage() {
               />
             </div>
 
-            {/* Количество посетителей */}
             <div>
-              <label className="block text-gray-700 mb-2">
-                Количество гостей
-              </label>
+              <label className="block text-gray-700 mb-2">Количество гостей</label>
               <input
                 type="number"
                 min="1"
@@ -132,7 +130,6 @@ export default function AquaparkCatalogPage() {
               />
             </div>
 
-            {/* Кнопка */}
             <button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg"
@@ -142,10 +139,9 @@ export default function AquaparkCatalogPage() {
           </form>
         </div>
 
-        {/* Уведомление */}
         {success && (
           <div className="fixed bottom-6 right-6 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg text-lg animate-fade-in-out">
-            ✅ Заявка отправлена!
+            Заявка отправлена!
           </div>
         )}
       </section>
