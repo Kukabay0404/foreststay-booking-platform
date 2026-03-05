@@ -9,10 +9,13 @@ type SearchParams = Record<string, string | string[] | undefined>;
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: Promise<SearchParams>;
 }) {
+  const resolvedSearchParams = (await searchParams) ?? {};
   const hasPrefillParams = Boolean(
-    searchParams?.checkIn || searchParams?.checkOut || searchParams?.guests,
+    resolvedSearchParams.checkIn ||
+      resolvedSearchParams.checkOut ||
+      resolvedSearchParams.guests,
   );
 
   // Skip blocking initial fetch when we already have filters in URL.

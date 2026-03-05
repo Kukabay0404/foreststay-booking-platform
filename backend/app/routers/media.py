@@ -30,7 +30,10 @@ async def presign_upload(
             upload_url=data["upload_url"],
             file_key=data["file_key"],
             public_url=data["public_url"],
-            required_headers={"Content-Type": data["content_type"]},
+            required_headers={
+                "Content-Type": data["content_type"],
+                "Cache-Control": data["cache_control"],
+            },
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

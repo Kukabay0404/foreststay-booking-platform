@@ -82,13 +82,16 @@ export default function Home() {
   return (
     <main className="w-full min-h-screen bg-white text-gray-800 relative">
       {/* Hero Section with Slideshow */}
-      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative flex min-h-[860px] flex-col items-center justify-center overflow-hidden sm:min-h-screen">
         {/* Слайд-шоу */}
         <div className="absolute inset-0">
           <AnimatePresence>
             <motion.img
               key={current}
               src={resolveMediaUrl(images[current])}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -104,16 +107,16 @@ export default function Home() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative z-10 text-center text-white max-w-2xl"
+          className="relative z-10 max-w-2xl px-4 text-center text-white"
         >
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+          <h1 className="mb-3 text-3xl font-bold sm:text-4xl md:mb-4 md:text-6xl">
             Насладитесь отдыхом в гармонии с природой
           </h1>
-          <p className="text-lg md:text-xl mb-6">
+          <p className="mb-5 text-base sm:text-lg md:mb-6 md:text-xl">
             Уютные домики, тишина леса и комфорт для всей семьи
           </p>
           <Link href="/booking">
-            <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl shadow-lg text-lg">
+            <button className="rounded-xl bg-green-600 px-5 py-3 text-base shadow-lg hover:bg-green-700 sm:px-6 sm:text-lg">
               Забронировать номер
             </button>
           </Link>
@@ -122,13 +125,13 @@ export default function Home() {
         {/* Стрелки переключения */}
         <button
           onClick={prevSlide}
-          className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+          className="absolute left-3 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:left-6 sm:block sm:p-3"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button
           onClick={nextSlide}
-          className="absolute right-6 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+          className="absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60 sm:right-6 sm:block sm:p-3"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -138,7 +141,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9 }}
-          className="absolute bottom-8 w-full max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 flex flex-col md:flex-row gap-4 z-20"
+          className="absolute bottom-3 left-3 right-3 z-20 flex w-auto flex-col gap-3 rounded-2xl bg-white p-4 shadow-lg sm:bottom-8 sm:left-1/2 sm:w-[calc(100%-2rem)] sm:max-w-4xl sm:-translate-x-1/2 sm:gap-4 sm:p-6 md:flex-row"
         >
           <div className="flex-1">
             <label className="block text-gray-600 text-sm">Заезд</label>
@@ -174,7 +177,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute bottom-full mb-2 left-0 w-[24rem] max-w-[calc(100vw-2rem)] bg-white shadow-lg rounded-xl border p-4 z-30"
+                className="absolute bottom-full left-0 z-30 mb-2 w-[min(24rem,calc(100vw-2rem))] rounded-xl border bg-white p-4 shadow-lg"
                 style={{ maxHeight: "400px", overflowY: "auto" }}
               >
                 <h3 className="text-lg font-semibold mb-3">Количество гостей</h3>
@@ -272,8 +275,8 @@ export default function Home() {
               className="w-full border rounded-lg p-2"
             />
           </div>
-          <Link href={bookingHref}>
-            <button className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-white self-end md:self-center">
+          <Link href={bookingHref} className="w-full md:w-auto">
+            <button className="w-full rounded-xl bg-green-600 px-6 py-3 text-white hover:bg-green-700 md:w-auto md:self-center">
               Найти номер
             </button>
           </Link>
@@ -284,8 +287,7 @@ export default function Home() {
       <section id="about" className="py-16 bg-white">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-6">
           <div>
-            <img
-              src={resolveMediaUrl("homepage/110d0083003b.jpg")}
+            <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/110d0083003b.jpg")}
               alt="Большие дома"
               className="rounded-2xl shadow-lg"
             />
@@ -314,14 +316,13 @@ export default function Home() {
               База отдыха окружена хвойным лесом и чистым озером.
               Здесь можно насладиться тишиной и красотой природы.
             </p>
-            <video controls className="rounded-2xl shadow-lg w-full">
+            <video controls preload="metadata" className="rounded-2xl shadow-lg w-full">
               <source src={resolveMediaUrl("homepage/nature.mp4")} type="video/mp4" />
               Ваш браузер не поддерживает видео.
             </video>
           </div>
           <div className="order-1 md:order-2">
-            <img
-              src={resolveMediaUrl("homepage/nature1.jpg")}
+            <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/nature1.jpg")}
               alt="Природа"
               className="rounded-2xl shadow-lg"
             />
@@ -333,8 +334,7 @@ export default function Home() {
       <section id="services" className="py-16 bg-white">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-6">
           <div>
-            <img
-              src={resolveMediaUrl("homepage/eb69d2216306.png")}
+            <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/eb69d2216306.png")}
               alt="Ресторан"
               className="rounded-2xl shadow-lg"
             />
@@ -357,19 +357,19 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-10">Активности</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src={resolveMediaUrl("homepage/299594cda2a2.jpg")} alt="Баня" className="rounded-xl mb-4" />
+              <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/299594cda2a2.jpg")} alt="Баня" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Баня</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src={resolveMediaUrl("homepage/bdad3b29c7a5.jpg")} alt="Прогулки" className="rounded-xl mb-4" />
+              <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/bdad3b29c7a5.jpg")} alt="Прогулки" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Прогулки на лошадях</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src={resolveMediaUrl("homepage/44babb782dab.jpg")} alt="Рыбалка" className="rounded-xl mb-4" />
+              <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/44babb782dab.jpg")} alt="Рыбалка" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Рыбалка</h3>
             </div>
             <div className="p-6 bg-white rounded-2xl shadow-lg">
-              <img src={resolveMediaUrl("homepage/0f0244d6800a.jpg")} alt="Детская площадка" className="rounded-xl mb-4" />
+              <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/0f0244d6800a.jpg")} alt="Детская площадка" className="rounded-xl mb-4" />
               <h3 className="font-semibold">Детская площадка</h3>
             </div>
           </div>
@@ -390,8 +390,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <Link href="/summer">
-                <img
-                  src={resolveMediaUrl("homepage/a37ddcf0e3b2.jpg")}
+                <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/a37ddcf0e3b2.jpg")}
                   alt="Летний отдых"
                   className="w-full h-64 object-cover cursor-pointer"
                 />
@@ -404,8 +403,7 @@ export default function Home() {
 
             <div className="relative rounded-2xl overflow-hidden shadow-lg">
               <Link href="/winter">
-              <img
-                src={resolveMediaUrl("homepage/5925d31146ff.jpg")}
+              <img loading="lazy" decoding="async" src={resolveMediaUrl("homepage/5925d31146ff.jpg")}
                 alt="Зимний отдых"
                 className="w-full h-64 object-cover cursor-pointer"
               />
@@ -444,36 +442,48 @@ export default function Home() {
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/66485a7cf828.jpg")}
+              loading="lazy"
+              decoding="async"
               alt="Домики"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/110d0083003b.jpg")}
+              loading="lazy"
+              decoding="async"
               alt="Беседки"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/nature1.jpg")}
+              loading="lazy"
+              decoding="async"
               alt="Природа"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/eb69d2216306.png")}
+              loading="lazy"
+              decoding="async"
               alt="Ресторан"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/44babb782dab.jpg")}
+              loading="lazy"
+              decoding="async"
               alt="Рыбалка"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
             <motion.img
               whileHover={{ scale: 1.05 }}
               src={resolveMediaUrl("homepage/0f0244d6800a.jpg")}
+              loading="lazy"
+              decoding="async"
               alt="Детская площадка"
               className="rounded-2xl shadow-lg w-full h-64 object-cover"
             />
@@ -578,5 +588,6 @@ export default function Home() {
     </main>
   );
 }
+
 
 

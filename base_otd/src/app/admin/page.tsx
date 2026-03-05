@@ -19,6 +19,9 @@ import { API_BASE_URL } from "@/lib/api";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1920;
+const TARGET_IMAGE_MIME = "image/webp";
+const TARGET_IMAGE_QUALITY = 0.82;
 
 type UploadTarget = "newRoom" | "editRoom" | "newCabin" | "editCabin";
 
@@ -134,6 +137,53 @@ export default function AdminPage() {
     return null;
   };
 
+  const optimizeImageForUpload = async (file: File): Promise<File> => {
+    // Small files usually don't benefit enough to justify processing on client.
+    if (file.size <= 1_500_000) return file;
+
+    const readDataUrl = (source: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result ?? ""));
+        reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
+        reader.readAsDataURL(source);
+      });
+
+    const loadImage = (src: string) =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new window.Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Не удалось декодировать изображение"));
+        img.src = src;
+      });
+
+    const dataUrl = await readDataUrl(file);
+    const img = await loadImage(dataUrl);
+
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.width, img.height));
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Не удалось обработать изображение");
+
+    ctx.drawImage(img, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, TARGET_IMAGE_MIME, TARGET_IMAGE_QUALITY);
+    });
+
+    if (!blob) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    const optimized = new File([blob], `${baseName}.webp`, { type: TARGET_IMAGE_MIME });
+    return optimized.size < file.size ? optimized : file;
+  };
+
   const uploadImageToR2 = async (
     file: File,
     folder: "rooms" | "cabins",
@@ -191,7 +241,8 @@ export default function AdminPage() {
     setUploadingTarget(target);
 
     try {
-      const uploaded = await uploadImageToR2(file, folder);
+      const optimizedFile = await optimizeImageForUpload(file);
+      const uploaded = await uploadImageToR2(optimizedFile, folder);
 
       if (target === "newRoom") {
         setNewRoom((prev) => ({
@@ -455,8 +506,8 @@ export default function AdminPage() {
   if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-center mb-8">Админ-панель</h1>
+    <div className="mx-auto max-w-7xl p-3 sm:p-4 md:p-6">
+      <h1 className="mb-6 text-center text-2xl font-bold md:mb-8 md:text-3xl">Админ-панель</h1>
       {uploadError && (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {uploadError}
@@ -464,19 +515,20 @@ export default function AdminPage() {
       )}
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid grid-cols-7 gap-2">
-          <TabsTrigger value="users">Пользователи</TabsTrigger>
-          <TabsTrigger value="rooms">Номера</TabsTrigger>
-          <TabsTrigger value="cabins">Срубы</TabsTrigger>
-          <TabsTrigger value="bookings">Заявки</TabsTrigger>
-          <TabsTrigger value="addUser">Создать пользователя</TabsTrigger>
-          <TabsTrigger value="addRoom">Создать номер</TabsTrigger>
-          <TabsTrigger value="addCabin">Создать сруб</TabsTrigger>
+        <TabsList className="mb-1 flex w-full gap-2 overflow-x-auto pb-1">
+          <TabsTrigger value="users" className="whitespace-nowrap">Пользователи</TabsTrigger>
+          <TabsTrigger value="rooms" className="whitespace-nowrap">Номера</TabsTrigger>
+          <TabsTrigger value="cabins" className="whitespace-nowrap">Срубы</TabsTrigger>
+          <TabsTrigger value="bookings" className="whitespace-nowrap">Заявки</TabsTrigger>
+          <TabsTrigger value="addUser" className="whitespace-nowrap">Создать пользователя</TabsTrigger>
+          <TabsTrigger value="addRoom" className="whitespace-nowrap">Создать номер</TabsTrigger>
+          <TabsTrigger value="addCabin" className="whitespace-nowrap">Создать сруб</TabsTrigger>
         </TabsList>
 
         {/* Пользователи */}
         <TabsContent value="users">
-          <table className="w-full border-collapse border mt-4">
+          <div className="mt-4 overflow-x-auto">
+          <table className="min-w-[760px] w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
                 <th className="border px-4 py-2">ID</th>
@@ -495,7 +547,7 @@ export default function AdminPage() {
                   <td className="border px-4 py-2">{u.last_name}</td>
                   <td className="border px-4 py-2">{u.email}</td>
                   <td className="border px-4 py-2">{u.role}</td>
-                  <td className="border px-4 py-2 flex gap-2">
+                  <td className="flex flex-col gap-2 border px-4 py-2 sm:flex-row">
                     <Button
                       onClick={() => deleteUser(u.id)}
                       className="bg-red-600 hover:bg-red-700 text-white"
@@ -547,11 +599,13 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </TabsContent>
 
         {/* Номера */}
         <TabsContent value="rooms">
-          <table className="w-full border-collapse border mt-4">
+          <div className="mt-4 overflow-x-auto">
+          <table className="min-w-[1100px] w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
                 <th className="border px-4 py-2">ID</th>
@@ -578,7 +632,7 @@ export default function AdminPage() {
                   <td className="border px-4 py-2">{r.tv ? "Да" : "Нет"}</td>
                   <td className="border px-4 py-2">{r.priceWeekdays}</td>
                   <td className="border px-4 py-2">{r.priceWeekend}</td>
-                  <td className="border px-4 py-2 flex gap-2">
+                  <td className="flex flex-col gap-2 border px-4 py-2 sm:flex-row">
                     <Button
                       onClick={() => deleteRoom(r.id)}
                       className="bg-red-600 hover:bg-red-700 text-white"
@@ -666,10 +720,12 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </TabsContent>
                 {/* Срубы */}
         <TabsContent value="cabins">
-          <table className="w-full border-collapse border mt-4">
+          <div className="mt-4 overflow-x-auto">
+          <table className="min-w-[1100px] w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
                 <th className="border px-4 py-2">ID</th>
@@ -696,7 +752,7 @@ export default function AdminPage() {
                   <td className="border px-4 py-2">{c.pool ? "Да" : "Нет"}</td>
                   <td className="border px-4 py-2">{c.priceWeekdays}</td>
                   <td className="border px-4 py-2">{c.priceWeekend}</td>
-                  <td className="border px-4 py-2 flex gap-2">
+                  <td className="flex flex-col gap-2 border px-4 py-2 sm:flex-row">
                     <Button
                       onClick={() => deleteCabin(c.id)}
                       className="bg-red-600 hover:bg-red-700 text-white"
@@ -784,10 +840,12 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </TabsContent>
 
         <TabsContent value="bookings">
-          <table className="w-full border-collapse border mt-4">
+          <div className="mt-4 overflow-x-auto">
+          <table className="min-w-[920px] w-full border-collapse border">
             <thead>
               <tr className="bg-gray-200">
                 <th className="border px-4 py-2">ID</th>
@@ -846,6 +904,7 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </TabsContent>
 
         <TabsContent value="addUser">
@@ -1085,14 +1144,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

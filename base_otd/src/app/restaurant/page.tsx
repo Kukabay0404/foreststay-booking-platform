@@ -82,8 +82,8 @@ export default function RestaurantPage() {
                   <Image
                     src={resolveMediaUrl(dish.image)}
                     alt={dish.name}
-                    unoptimized
                     fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover"
                   />
                 </div>
@@ -125,8 +125,8 @@ export default function RestaurantPage() {
           <Image
             src={resolveMediaUrl("restaurant/interior/img1.jpg")}
             alt="Ресторан интерьер"
-            unoptimized
             fill
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
           />
         </div>
@@ -134,8 +134,8 @@ export default function RestaurantPage() {
           <Image
             src={resolveMediaUrl("restaurant/interior/img2.jpg")}
             alt="Ресторан на берегу"
-            unoptimized
             fill
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
           />
         </div>
@@ -174,10 +174,10 @@ export default function RestaurantPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg">
-              <Image src={resolveMediaUrl("restaurant/banket/img1.jpg")} alt="Банкетный зал" unoptimized fill className="object-cover" />
+              <Image src={resolveMediaUrl("restaurant/banket/img1.jpg")} alt="Банкетный зал" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
             </div>
             <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg">
-              <Image src={resolveMediaUrl("restaurant/banket/img2.jpeg")} alt="Декор зала" unoptimized fill className="object-cover" />
+              <Image src={resolveMediaUrl("restaurant/banket/img2.jpeg")} alt="Декор зала" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
             </div>
           </div>
         </div>
@@ -235,8 +235,9 @@ function Gallery() {
       <Image
         src={resolveMediaUrl(gallery[current])}
         alt="Restaurant gallery"
-        unoptimized
         fill
+        priority
+        sizes="(max-width: 768px) 100vw, 70vw"
         className="object-cover"
       />
       <button

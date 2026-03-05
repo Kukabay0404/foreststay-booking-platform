@@ -20,6 +20,7 @@ ALLOWED_IMAGE_TYPES = {
 }
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+CACHE_CONTROL_HEADER = "public, max-age=31536000, immutable"
 SAFE_FOLDER_RE = re.compile(r"[^a-zA-Z0-9/_-]+")
 SAFE_FILENAME_RE = re.compile(r"[^a-zA-Z0-9._-]+")
 
@@ -105,6 +106,7 @@ def create_presigned_upload(
             "Bucket": settings.R2_BUCKET_NAME,
             "Key": file_key,
             "ContentType": content_type,
+            "CacheControl": CACHE_CONTROL_HEADER,
         },
         ExpiresIn=settings.R2_PRESIGN_EXPIRES_SECONDS,
         HttpMethod="PUT",
@@ -115,6 +117,7 @@ def create_presigned_upload(
         "file_key": file_key,
         "public_url": _build_public_url(file_key),
         "content_type": content_type,
+        "cache_control": CACHE_CONTROL_HEADER,
     }
 
 

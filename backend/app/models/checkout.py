@@ -65,11 +65,11 @@ class Booking(Base):
         nullable=True,
     )
     room_id: Mapped[int | None] = mapped_column(
-        ForeignKey("rooms.id", ondelete="RESTRICT"),
+        ForeignKey("rooms.id", ondelete="CASCADE"),
         nullable=True,
     )
     cabin_id: Mapped[int | None] = mapped_column(
-        ForeignKey("cabins.id", ondelete="RESTRICT"),
+        ForeignKey("cabins.id", ondelete="CASCADE"),
         nullable=True,
     )
 
